@@ -1,0 +1,1 @@
+window.FOCUS_HUBS = [];
