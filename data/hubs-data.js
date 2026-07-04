@@ -1,1 +1,1 @@
-window.FOCUS_HUBS = [];
+window.FOCUS_HUBS=[{"id":"ALTF-1","olt":"ALTF","hub":"HUB 1","hubNumber":"1","address":"Intersection of NC 211 Hwy E and Singletary Church Rd","development":"2022 ReConnect - ALT Phase 1","cabinet":"AFL 432","pairs":"101-132, 201-232, 301-332, 401-432, 501-532, 601-632","siteTitle":"ALTF (All ALTFX XGS Only) Allenton OLT 2279 Singletary Church Rd. Lumberton, NC 28358","mapsQuery":"Intersection of NC 211 Hwy E and Singletary Church Rd ALTF (All ALTFX XGS Only) Allenton OLT 2279 Singletary Church Rd. Lumberton, NC 28358 North Carolina"}];
