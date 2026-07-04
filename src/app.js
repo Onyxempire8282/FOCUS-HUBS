@@ -1,5 +1,8 @@
 const KEY = 'focus_hubs_data';
-let hubs = JSON.parse(localStorage.getItem(KEY) || '[]');
+
+let hubs = (window.FOCUS_HUBS && window.FOCUS_HUBS.length)
+  ? window.FOCUS_HUBS
+  : JSON.parse(localStorage.getItem(KEY) || '[]');
 
 const $ = id => document.getElementById(id);
 const clean = value => String(value || '').replace(/\s+/g, ' ').trim();
