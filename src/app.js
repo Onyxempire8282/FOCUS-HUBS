@@ -1,4 +1,5 @@
 const hubs = Array.isArray(window.FOCUS_HUBS) ? window.FOCUS_HUBS : [];
+const PIN_KEY = "find_my_hub_saved_pins";
 
 const $ = (id) => document.getElementById(id);
 
@@ -6,6 +7,8 @@ const searchInput = $("searchInput");
 const clearBtn = $("clearBtn");
 const results = $("results");
 const stats = $("stats");
+
+let savedPins = JSON.parse(localStorage.getItem(PIN_KEY) || "{}");
 
 const normalize = (value) =>
   String(value || "")
@@ -17,20 +20,19 @@ function scoreHub(hub, query) {
   const q = normalize(query);
   if (!q) return 1;
 
-  const search = hub.search || normalize(Object.values(hub).join(" "));
-  const oltHub = normalize(`${hub.olt} ${hub.hubNumber}`);
-  const hubOnly = normalize(hub.hubNumber);
+  const hubNum = String(hub.hubNumber).trim();
+  const olt = normalize(hub.olt);
 
-  if (oltHub === q) return 100;
-  if (normalize(hub.id) === q) return 95;
-  if (normalize(hub.olt) === q) return 80;
-  if (hubOnly === q) return 60;
-  if (search.includes(q)) return 40;
+  if (q === `${olt} ${hubNum}`) return 1000;
+  if (q === `hub ${hubNum}`) return 900;
+  if (/^\d+$/.test(q) && q === hubNum) return 850;
+  if (q === olt) return 700;
+  if (normalize(hub.address).includes(q)) return 600;
+  if (normalize(hub.city).includes(q)) return 500;
+  if (normalize(hub.development).includes(q)) return 400;
+  if ((hub.search || "").includes(q)) return 100;
 
-  const parts = q.split(" ").filter(Boolean);
-  const matches = parts.filter((part) => search.includes(part)).length;
-
-  return matches === parts.length ? 20 + matches : 0;
+  return 0;
 }
 
 function cleanIntersectionQuery(address) {
@@ -43,9 +45,7 @@ function cleanIntersectionQuery(address) {
 
   if (!isIntersection) return text;
 
-  // Remove house number (ex: 1801)
   text = text.replace(/^\d+\s+/, "");
-
   text = text.replace(/\bat intersection w\/\b/i, " & ");
   text = text.replace(/\bat intersection with\b/i, " & ");
   text = text.replace(/\bintersection of\b/i, "");
@@ -57,21 +57,67 @@ function cleanIntersectionQuery(address) {
 }
 
 function getLocationQuery(hub) {
+  const pin = savedPins[hub.id];
+
+  if (pin) {
+    return `${pin.lat},${pin.lng}`;
+  }
+
   const cleanedAddress = cleanIntersectionQuery(hub.address);
 
-  return [
-    cleanedAddress,
-    hub.city,
-    "NC"
-  ].filter(Boolean).join(", ");
+  return [cleanedAddress, hub.city, "NC"].filter(Boolean).join(", ");
 }
 
 function previewUrl(hub) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getLocationQuery(hub))}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    getLocationQuery(hub)
+  )}`;
 }
 
 function navigateUrl(hub) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(getLocationQuery(hub))}&travelmode=driving`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    getLocationQuery(hub)
+  )}&travelmode=driving`;
+}
+
+function saveCurrentLocation(hub) {
+  if (!navigator.geolocation) {
+    alert("GPS location is not available on this device.");
+    return;
+  }
+
+  const confirmed = confirm(
+    `Save your current GPS location for ${hub.olt} ${hub.hub}? Stand near the hub before saving.`
+  );
+
+  if (!confirmed) return;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      savedPins[hub.id] = {
+        lat: Number(position.coords.latitude.toFixed(7)),
+        lng: Number(position.coords.longitude.toFixed(7)),
+        accuracy: Math.round(position.coords.accuracy || 0),
+        savedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem(PIN_KEY, JSON.stringify(savedPins));
+
+      alert(
+        `Saved pin for ${hub.olt} ${hub.hub}. Accuracy: about ${savedPins[hub.id].accuracy} meters.`
+      );
+
+      render();
+    },
+    (error) => {
+      alert(`Could not save GPS location: ${error.message}`);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    }
+  );
 }
 
 function searchHubs(query) {
@@ -84,6 +130,8 @@ function searchHubs(query) {
 }
 
 function renderHub(hub) {
+  const hasPin = Boolean(savedPins[hub.id]);
+
   const card = document.createElement("article");
   card.className = "hub-card";
 
@@ -97,6 +145,12 @@ function renderHub(hub) {
 
     <p class="address">${hub.address || "No location listed."}</p>
 
+    <div class="status-row">
+      <span class="badge ${hasPin ? "good" : "warn"}">
+        ${hasPin ? "Verified GPS Pin" : "Spreadsheet Location"}
+      </span>
+    </div>
+
     <div class="meta">
       ${hub.city ? `<span><strong>City:</strong> ${hub.city}</span>` : ""}
       ${hub.development ? `<span><strong>Development:</strong> ${hub.development}</span>` : ""}
@@ -106,6 +160,7 @@ function renderHub(hub) {
     <div class="actions">
       <button class="secondary preview-btn">Preview</button>
       <button class="primary nav-btn">Navigate</button>
+      <button class="secondary save-pin-btn">Save Current Location</button>
     </div>
   `;
 
@@ -115,6 +170,10 @@ function renderHub(hub) {
 
   card.querySelector(".nav-btn").addEventListener("click", () => {
     window.open(navigateUrl(hub), "_blank");
+  });
+
+  card.querySelector(".save-pin-btn").addEventListener("click", () => {
+    saveCurrentLocation(hub);
   });
 
   return card;
