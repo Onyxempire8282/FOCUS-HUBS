@@ -1,120 +1,164 @@
-const KEY = 'focus_hubs_data';
+const hubs = Array.isArray(window.FOCUS_HUBS) ? window.FOCUS_HUBS : [];
 
-let hubs = (window.FOCUS_HUBS && window.FOCUS_HUBS.length)
-  ? window.FOCUS_HUBS
-  : JSON.parse(localStorage.getItem(KEY) || '[]');
+const $ = (id) => document.getElementById(id);
 
-const $ = id => document.getElementById(id);
-const clean = value => String(value || '').replace(/\s+/g, ' ').trim();
-const norm = value => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const searchInput = $("searchInput");
+const clearBtn = $("clearBtn");
+const results = $("results");
+const stats = $("stats");
 
-function findHeader(rows) {
-  return rows.findIndex(row => {
-    const text = row.map(norm).join(' ');
-    return text.includes('hub') && text.includes('address');
+const normalize = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+function scoreHub(hub, query) {
+  const q = normalize(query);
+  if (!q) return 1;
+
+  const search = hub.search || normalize(Object.values(hub).join(" "));
+  const oltHub = normalize(`${hub.olt} ${hub.hubNumber}`);
+  const hubOnly = normalize(hub.hubNumber);
+
+  if (oltHub === q) return 100;
+  if (normalize(hub.id) === q) return 95;
+  if (normalize(hub.olt) === q) return 80;
+  if (hubOnly === q) return 60;
+  if (search.includes(q)) return 40;
+
+  const parts = q.split(" ").filter(Boolean);
+  const matches = parts.filter((part) => search.includes(part)).length;
+
+  return matches === parts.length ? 20 + matches : 0;
+}
+
+function cleanIntersectionQuery(address) {
+  let text = String(address || "").trim();
+
+  const isIntersection =
+    /intersection/i.test(text) ||
+    /\sw\/\s/i.test(text) ||
+    /\bwith\b/i.test(text);
+
+  if (!isIntersection) return text;
+
+  // Remove house number (ex: 1801)
+  text = text.replace(/^\d+\s+/, "");
+
+  text = text.replace(/\bat intersection w\/\b/i, " & ");
+  text = text.replace(/\bat intersection with\b/i, " & ");
+  text = text.replace(/\bintersection of\b/i, "");
+  text = text.replace(/\band\b/i, " & ");
+  text = text.replace(/\bw\/\b/i, " & ");
+  text = text.replace(/\s+/g, " ").trim();
+
+  return text;
+}
+
+function getLocationQuery(hub) {
+  const cleanedAddress = cleanIntersectionQuery(hub.address);
+
+  return [
+    cleanedAddress,
+    hub.city,
+    "NC"
+  ].filter(Boolean).join(", ");
+}
+
+function previewUrl(hub) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getLocationQuery(hub))}`;
+}
+
+function navigateUrl(hub) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(getLocationQuery(hub))}&travelmode=driving`;
+}
+
+function searchHubs(query) {
+  return hubs
+    .map((hub) => ({ hub, score: scoreHub(hub, query) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.hub.id.localeCompare(b.hub.id))
+    .map((item) => item.hub)
+    .slice(0, 80);
+}
+
+function renderHub(hub) {
+  const card = document.createElement("article");
+  card.className = "hub-card";
+
+  card.innerHTML = `
+    <div class="hub-top">
+      <div>
+        <h2>${hub.olt} • ${hub.hub}</h2>
+        <p class="subline">${hub.id}</p>
+      </div>
+    </div>
+
+    <p class="address">${hub.address || "No location listed."}</p>
+
+    <div class="meta">
+      ${hub.city ? `<span><strong>City:</strong> ${hub.city}</span>` : ""}
+      ${hub.development ? `<span><strong>Development:</strong> ${hub.development}</span>` : ""}
+      ${hub.cabinet ? `<span><strong>Cabinet:</strong> ${hub.cabinet}</span>` : ""}
+    </div>
+
+    <div class="actions">
+      <button class="secondary preview-btn">Preview</button>
+      <button class="primary nav-btn">Navigate</button>
+    </div>
+  `;
+
+  card.querySelector(".preview-btn").addEventListener("click", () => {
+    window.open(previewUrl(hub), "_blank");
   });
-}
 
-function findCol(headers, word, fallback) {
-  const index = headers.findIndex(header => norm(header).includes(word));
-  return index >= 0 ? index : fallback;
-}
-
-function importWorkbook(workbook) {
-  const next = [];
-  workbook.SheetNames.forEach(sheetName => {
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-    const headerRow = findHeader(rows);
-    if (headerRow < 0) return;
-
-    const headers = rows[headerRow];
-    const hubCol = findCol(headers, 'hub', 0);
-    const addressCol = findCol(headers, 'address', 1);
-    const developmentCol = findCol(headers, 'development', -1);
-    const cabinetCol = findCol(headers, 'cabinet', -1);
-    const pairCol = findCol(headers, 'pair', -1);
-
-    rows.slice(headerRow + 1).forEach(row => {
-      const rawHub = clean(row[hubCol]);
-      const address = clean(row[addressCol]);
-      if (!rawHub || norm(rawHub) === 'hub') return;
-      const hubNumber = (rawHub.match(/\d+/) || [rawHub])[0];
-      next.push({
-        id: `${sheetName}-${hubNumber}`,
-        olt: sheetName,
-        hub: rawHub.toUpperCase().startsWith('HUB') ? rawHub : `HUB ${hubNumber}`,
-        hubNumber,
-        address,
-        development: developmentCol >= 0 ? clean(row[developmentCol]) : '',
-        cabinet: cabinetCol >= 0 ? clean(row[cabinetCol]) : '',
-        pairs: pairCol >= 0 ? clean(row[pairCol]) : ''
-      });
-    });
+  card.querySelector(".nav-btn").addEventListener("click", () => {
+    window.open(navigateUrl(hub), "_blank");
   });
-  hubs = next;
-  localStorage.setItem(KEY, JSON.stringify(hubs));
-  $('importNote').textContent = `Imported ${hubs.length} hubs.`;
-  render();
-}
 
-function resultText(hub) {
-  return norm(`${hub.id} ${hub.olt} ${hub.hub} ${hub.hubNumber} ${hub.address} ${hub.development} ${hub.cabinet} ${hub.pairs}`);
-}
-
-function getMatches() {
-  const q = norm($('searchInput').value);
-  if (!q) return hubs.slice(0, 50);
-  const parts = q.split(' ');
-  return hubs.filter(hub => parts.every(part => resultText(hub).includes(part))).slice(0, 80);
+  return card;
 }
 
 function render() {
-  const list = getMatches();
-  $('stats').textContent = `${hubs.length} hubs loaded • showing ${list.length}`;
-  const box = $('results');
-  box.innerHTML = '';
-  if (!list.length) {
-    box.innerHTML = '<article class="hub-card"><h2>No hubs found</h2><p class="subline">Import the workbook or try another search.</p></article>';
+  const query = searchInput.value;
+  const list = searchHubs(query);
+
+  stats.textContent = `${hubs.length} hubs loaded • showing ${list.length}`;
+
+  results.innerHTML = "";
+
+  if (!hubs.length) {
+    results.innerHTML = `
+      <article class="hub-card">
+        <h2>No hub data loaded</h2>
+        <p class="subline">Run npm run convert first.</p>
+      </article>
+    `;
     return;
   }
-  list.forEach(hub => {
-    const template = document.getElementById('hubTemplate').content.cloneNode(true);
-    template.querySelector('h2').textContent = `${hub.olt} - ${hub.hub}`;
-    template.querySelector('.subline').textContent = hub.id;
-    template.querySelector('.address').textContent = hub.address || 'No location description listed.';
-    template.querySelector('.meta').innerHTML = [
-      ['Development', hub.development],
-      ['Cabinet', hub.cabinet],
-      ['Pairs', hub.pairs]
-    ].filter(item => item[1]).map(item => `<span><strong>${item[0]}:</strong> ${item[1]}</span>`).join('');
-    template.querySelector('.status-row').innerHTML = '<span class="badge warn">Estimated from sheet</span>';
-    template.querySelector('.navigate').onclick = () => {
-      const query = `${hub.address} ${hub.olt} North Carolina`;
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank');
-    };
-    template.querySelector('.add-stop').onclick = template.querySelector('.navigate').onclick;
-    template.querySelector('.save-location').onclick = () => alert('Verified pin saving is next.');
-    box.appendChild(template);
+
+  if (!list.length) {
+    results.innerHTML = `
+      <article class="hub-card">
+        <h2>No hubs found</h2>
+        <p class="subline">Try an OLT, street, city, or hub number.</p>
+      </article>
+    `;
+    return;
+  }
+
+  list.forEach((hub) => {
+    results.appendChild(renderHub(hub));
   });
 }
 
-$('searchInput').addEventListener('input', render);
-$('clearBtn').onclick = () => { $('searchInput').value = ''; render(); };
-$('importBtn').onclick = async () => {
-  const file = $('excelInput').files[0];
-  if (!file) return alert('Choose the Focus hub Excel workbook first.');
-  if (!window.XLSX) return alert('Excel parser did not load. Reload with internet once and try again.');
-  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-  importWorkbook(workbook);
-};
+searchInput.addEventListener("input", render);
 
-document.querySelectorAll('[data-filter]').forEach(button => button.onclick = render);
-$('addAddressBtn').onclick = () => {
-  const address = prompt('Enter address or location:');
-  if (address) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
-};
-$('openRouteBtn').onclick = () => alert('Route pad is next.');
-$('clearRouteBtn').onclick = () => alert('Route pad is next.');
+clearBtn.addEventListener("click", () => {
+  searchInput.value = "";
+  searchInput.focus();
+  render();
+});
 
 render();
