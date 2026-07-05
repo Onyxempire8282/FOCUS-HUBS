@@ -1,0 +1,14 @@
+{
+  "name": "find-my-hub",
+  "version": "0.1.0",
+  "description": "Find My Hub - Search and navigate Focus Fiber hubs.",
+  "author": "Jay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "convert": "node tools/convert-hubs.js"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
