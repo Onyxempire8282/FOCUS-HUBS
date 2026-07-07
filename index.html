@@ -10,28 +10,25 @@
   <main class="app-shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">Field locator</p>
-        <h1>FOCUS HUBS</h1>
+       <p class="eyebrow">FOCUS Fiber Field Locator</p>
+<h1>Find My Hub</h1>
       </div>
     </section>
 
     <section class="search-card">
-      <label for="searchInput">Search OLT, hub, road, or development</label>
+     <label for="searchInput">
+    Search Hub, Road, Development or Cabinet
+</label>
       <div class="search-row">
-        <input id="searchInput" type="search" placeholder="Example: SSDF 3 or Seaside" autocomplete="off" autofocus />
+        <input id="searchInput"
+       type="search"
+       placeholder="Search hub, road or development..."
+       autocomplete="off"
+       autofocus />
         <button id="clearBtn" title="Clear search">×</button>
       </div>
-      <div class="import-row">
-        <input id="excelInput" type="file" accept=".xlsx,.xls" />
-        <button id="importBtn" class="secondary">Import Excel</button>
-      </div>
-      <p class="import-note" id="importNote">Import the Focus hub workbook once, then search offline.</p>
-      <div class="quick-row">
-        <button data-filter="verified">Verified</button>
-        <button data-filter="recent">Recent</button>
-        <button data-filter="favorites">Favorites</button>
-        <button data-filter="all">All</button>
-      </div>
+     
+     
     </section>
 
     <section class="route-card">
@@ -49,6 +46,9 @@
 
     <section class="stats" id="stats"></section>
     <section id="results" class="results"></section>
+    <footer class="footer">
+    Find My Hub • Version 1.0.0
+</footer>
   </main>
 
   <template id="hubTemplate">
@@ -58,7 +58,7 @@
           <h2></h2>
           <p class="subline"></p>
         </div>
-        <button class="favorite" title="Favorite">☆</button>
+       
       </div>
       <p class="address"></p>
       <div class="meta"></div>
@@ -66,7 +66,7 @@
       <div class="actions">
         <button class="primary navigate">Navigate</button>
         <button class="secondary add-stop">Add stop</button>
-        <button class="secondary save-location">Save GPS</button>
+        <button class="secondary save-location">Save Pin</button>
       </div>
     </article>
   </template>

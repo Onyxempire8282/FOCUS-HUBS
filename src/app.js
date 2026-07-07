@@ -38,19 +38,27 @@ function scoreHub(hub, query) {
 function cleanIntersectionQuery(address) {
   let text = String(address || "").trim();
 
-  const isIntersection =
-    /intersection/i.test(text) ||
-    /\sw\/\s/i.test(text) ||
-    /\bwith\b/i.test(text);
+  const isCrossStreet =
+    /intersection|corner|cross street|crossroad|across from|across|near|beside|next to|w\/|with/i.test(text);
 
-  if (!isIntersection) return text;
+  if (!isCrossStreet) return text;
 
   text = text.replace(/^\d+\s+/, "");
-  text = text.replace(/\bat intersection w\/\b/i, " & ");
-  text = text.replace(/\bat intersection with\b/i, " & ");
-  text = text.replace(/\bintersection of\b/i, "");
-  text = text.replace(/\band\b/i, " & ");
+  text = text.replace(/\bat\s+the\s+intersection\s+of\b/i, "");
+  text = text.replace(/\bat\s+intersection\s+w\/\b/i, " & ");
+  text = text.replace(/\bat\s+intersection\s+with\b/i, " & ");
+  text = text.replace(/\bintersection\s+of\b/i, "");
+  text = text.replace(/\bcorner\s+of\b/i, "");
+  text = text.replace(/\bat\s+corner\s+of\b/i, "");
+  text = text.replace(/\bcross\s+street\s+of\b/i, " & ");
+  text = text.replace(/\bacross\s+from\b/i, "");
+  text = text.replace(/\bnext\s+to\b/i, "");
+  text = text.replace(/\bbeside\b/i, "");
+  text = text.replace(/\bnear\b/i, "");
   text = text.replace(/\bw\/\b/i, " & ");
+  text = text.replace(/\bwith\b/i, " & ");
+  text = text.replace(/\band\b/i, " & ");
+  text = text.replace(/\s*&\s*/g, " & ");
   text = text.replace(/\s+/g, " ").trim();
 
   return text;

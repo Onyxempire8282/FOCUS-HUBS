@@ -264,3 +264,11 @@ input {
 @media (min-width: 680px) {
   .results { grid-template-columns: 1fr 1fr; }
 }
+
+.footer {
+    margin-top: 2rem;
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #888;
+}
