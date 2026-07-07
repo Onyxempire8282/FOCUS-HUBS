@@ -23,3 +23,26 @@ A simple field hub locator for Focus fiber work.
 ## Notes
 
 Verified GPS pins are stored in your browser's local storage on the phone/device you use. They are not uploaded anywhere yet.
+
+## 7/06/2026
+
+# Find My Hub
+
+A lightweight field tool for FOCUS Fiber Technicians.
+
+## Features
+
+- Search 1,500+ fiber hubs
+- Search by Hub, Road, Development or Cabinet
+- Google Maps Preview
+- Google Maps Navigation
+- Route Pad
+- Save GPS Pins
+- Export Verified Pins
+- Offline Hub Database
+
+## Future
+
+- Shared verified pins
+- Smarter Google Maps searches
+- Team pin database
