@@ -156,7 +156,17 @@ input {
   margin-top: 14px;
 }
 
-.hub-card { position: relative; }
+.hub-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
 
 .hub-top {
   justify-content: space-between;
@@ -219,8 +229,15 @@ input {
 .badge.blue { color: var(--accent); }
 
 .actions {
-  margin-top: 14px;
-  flex-wrap: wrap;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.actions button {
+    flex: 1;
+    min-width: 110px;
 }
 
 .primary {

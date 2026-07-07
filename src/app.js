@@ -168,7 +168,7 @@ function renderHub(hub) {
     <div class="actions">
       <button class="secondary preview-btn">Preview</button>
       <button class="primary nav-btn">Navigate</button>
-      <button class="secondary save-pin-btn">Save Current Location</button>
+      <button class="secondary save-pin-btn">📍 Save Pin</button>
     </div>
   `;
 
