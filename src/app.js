@@ -93,44 +93,101 @@ function navigateUrl(hub) {
 }
 
 function saveCurrentLocation(hub) {
+
   if (!navigator.geolocation) {
     alert("GPS location is not available on this device.");
     return;
   }
 
-  const confirmed = confirm(
-    `Save your current GPS location for ${hub.olt} ${hub.hub}? Stand near the hub before saving.`
-  );
+  const existingPin =
+    savedPins[hub.id] ||
+    sharedPins[hub.id];
 
-  if (!confirmed) return;
+  if (existingPin) {
+
+    const replace = confirm(
+`A GPS pin already exists for
+
+${hub.olt} ${hub.hub}
+
+Do you want to replace it with your current location?`
+    );
+
+    if (!replace) {
+      return;
+    }
+
+  } else {
+
+    const save = confirm(
+`Save your current GPS location for
+
+${hub.olt} ${hub.hub}?
+
+Stand next to the hub before saving.`
+    );
+
+    if (!save) {
+      return;
+    }
+
+  }
 
   navigator.geolocation.getCurrentPosition(
+
     (position) => {
+
       savedPins[hub.id] = {
+
         lat: Number(position.coords.latitude.toFixed(7)),
+
         lng: Number(position.coords.longitude.toFixed(7)),
+
         accuracy: Math.round(position.coords.accuracy || 0),
+
         savedAt: new Date().toISOString()
+
       };
 
-      localStorage.setItem(PIN_KEY, JSON.stringify(savedPins));
+      localStorage.setItem(
+        PIN_KEY,
+        JSON.stringify(savedPins)
+      );
 
       alert(
-        `Saved pin for ${hub.olt} ${hub.hub}. Accuracy: about ${savedPins[hub.id].accuracy} meters.`
+`GPS pin saved!
+
+Accuracy:
+±${savedPins[hub.id].accuracy} meters`
       );
 
       render();
+
     },
+
     (error) => {
-      alert(`Could not save GPS location: ${error.message}`);
+
+      alert(
+        `Unable to save GPS location.\n\n${error.message}`
+      );
+
     },
+
     {
+
       enableHighAccuracy: true,
+
       timeout: 15000,
+
       maximumAge: 0
+
     }
+
   );
+
 }
+
+ 
 
 function searchHubs(query) {
   return hubs
@@ -274,10 +331,11 @@ function exportPins(){
 
     a.download="shared-pins.js";
 
-    a.click();
+   a.click();
 
-    URL.revokeObjectURL(url);
+alert("Verified pins exported successfully.");
 
+URL.revokeObjectURL(url);
 }
 
 document
