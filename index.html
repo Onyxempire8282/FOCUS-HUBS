@@ -45,34 +45,24 @@
     </section>
 
     <section class="stats" id="stats"></section>
-    <section id="results" class="results"></section>
-    <footer class="footer">
-    Find My Hub • Version 1.0.0
-</footer>
-  </main>
+            <section id="results" class="results"></section>
 
-  <template id="hubTemplate">
-    <article class="hub-card">
-      <div class="hub-top">
-        <div>
-          <h2></h2>
-          <p class="subline"></p>
+    <footer class="footer">
+        Find My Hub • Version 1.0.0
+
+        <div style="margin-top:18px;text-align:center;">
+            <button id="exportPins">
+                Export Verified Pins
+            </button>
         </div>
-       
-      </div>
-      <p class="address"></p>
-      <div class="meta"></div>
-      <div class="status-row"></div>
-      <div class="actions">
-        <button class="primary navigate">Navigate</button>
-        <button class="secondary add-stop">Add stop</button>
-        <button class="secondary save-location">Save Pin</button>
-      </div>
-    </article>
-  </template>
+    </footer>
+
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="./data/hubs-data.js"></script>
+  <script src="./data/shared-pins.js"></script>
   <script src="./src/app.js"></script>
+
 </body>
 </html>

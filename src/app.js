@@ -1,6 +1,9 @@
 const hubs = Array.isArray(window.FOCUS_HUBS) ? window.FOCUS_HUBS : [];
 const PIN_KEY = "find_my_hub_saved_pins";
 
+const sharedPins =
+    window.SHARED_HUB_PINS || {};
+
 const $ = (id) => document.getElementById(id);
 
 const searchInput = $("searchInput");
@@ -65,8 +68,9 @@ function cleanIntersectionQuery(address) {
 }
 
 function getLocationQuery(hub) {
-  const pin = savedPins[hub.id];
-
+  const pin =
+    savedPins[hub.id] ||
+    sharedPins[hub.id];
   if (pin) {
     return `${pin.lat},${pin.lng}`;
   }
@@ -138,7 +142,17 @@ function searchHubs(query) {
 }
 
 function renderHub(hub) {
-  const hasPin = Boolean(savedPins[hub.id]);
+  const localPin =
+    savedPins[hub.id];
+
+const sharedPin =
+    sharedPins[hub.id];
+
+const pin =
+    localPin || sharedPin;
+
+const hasPin =
+    Boolean(pin);
 
   const card = document.createElement("article");
   card.className = "hub-card";
@@ -155,7 +169,15 @@ function renderHub(hub) {
 
     <div class="status-row">
       <span class="badge ${hasPin ? "good" : "warn"}">
-        ${hasPin ? "Verified GPS Pin" : "Spreadsheet Location"}
+       ${
+localPin
+?"📍 Personal GPS"
+
+:sharedPin
+?"🌐 Shared GPS"
+
+:"📄 Spreadsheet"
+}
       </span>
     </div>
 
@@ -191,7 +213,8 @@ function render() {
   const query = searchInput.value;
   const list = searchHubs(query);
 
-  stats.textContent = `${hubs.length} hubs loaded • showing ${list.length}`;
+  stats.textContent =
+`${hubs.length} hubs loaded • ${Object.keys(savedPins).length} verified pins • Showing ${list.length}`;
 
   results.innerHTML = "";
 
@@ -227,5 +250,40 @@ clearBtn.addEventListener("click", () => {
   searchInput.focus();
   render();
 });
+
+function exportPins(){
+
+    const output =
+`window.SHARED_HUB_PINS = ${JSON.stringify(savedPins,null,2)};`;
+
+    const blob =
+        new Blob(
+            [output],
+            {
+                type:
+                "text/javascript"
+            });
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const a =
+        document.createElement("a");
+
+    a.href=url;
+
+    a.download="shared-pins.js";
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+}
+
+document
+.getElementById("exportPins")
+.addEventListener(
+"click",
+exportPins);
 
 render();

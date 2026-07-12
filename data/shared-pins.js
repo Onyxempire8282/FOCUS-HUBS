@@ -1,0 +1,1 @@
+window.SHARED_HUB_PINS = {};
